@@ -1,30 +1,64 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  fetchEmployees,
+  fetchEmployeesPage,
   fetchEmployeePayroll,
   type EmployeeRow,
   type EmployeePayrollResponse,
 } from "../api/employees";
 
+const PAGE_SIZE = 25;
+const DEBOUNCE_MS = 250;
+
 export function useEmployeesPage() {
-  const [employees, setEmployees] = useState<EmployeeRow[] | null>(null);
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [total, setTotal] = useState(0);
+
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState("");
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<EmployeePayrollResponse | null>(null);
 
-  const [query, setQuery] = useState("");
-  const [showDetails, setShowDetails] = useState(false);
-
+  const [showDetails, setShowDetails] = useState(false); // falls du es noch in der Page brauchst
   const [error, setError] = useState<string | null>(null);
+
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // debounce query
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // Wenn query geändert wird: zurück auf Seite 1
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery]);
 
   async function refreshEmployees() {
     try {
       setError(null);
       setLoadingEmployees(true);
-      const rows = await fetchEmployees();
-      setEmployees(rows);
-      if (rows.length > 0 && selectedId == null) setSelectedId(rows[0].id);
+
+      const res = await fetchEmployeesPage({
+        q: debouncedQuery.trim() ? debouncedQuery.trim() : undefined,
+        page,
+        page_size: PAGE_SIZE,
+      });
+
+      setEmployees(res.items);
+      setTotal(res.total);
+
+      // auto-select first if nothing selected or selected not in current page
+      if (res.items.length > 0) {
+        const stillThere = selectedId != null && res.items.some((e) => e.id === selectedId);
+        if (selectedId == null || !stillThere) setSelectedId(res.items[0].id);
+      } else {
+        setSelectedId(null);
+        setDetail(null);
+      }
     } catch (e: any) {
       setError(e?.message ?? "Mitarbeiter konnten nicht geladen werden");
     } finally {
@@ -46,39 +80,48 @@ export function useEmployeesPage() {
     }
   }
 
+  // Load employees when page or debouncedQuery changes
   useEffect(() => {
     refreshEmployees();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page, debouncedQuery]);
 
+  // Load detail when selection changes
   useEffect(() => {
     if (selectedId != null) loadDetail(selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  const filteredEmployees = useMemo(() => {
-    if (!employees) return [];
-    const s = query.trim().toLowerCase();
-    if (!s) return employees;
-    return employees.filter((e) => {
-      const full = `${e.first_name} ${e.last_name} ${e.external_id}`.toLowerCase();
-      return full.includes(s);
-    });
-  }, [employees, query]);
+  const pageCount = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
 
   return {
     employees,
-    filteredEmployees,
-    selectedId,
-    setSelectedId,
-    detail,
+    total,
+    page,
+    pageCount,
+    pageSize: PAGE_SIZE,
+
     query,
     setQuery,
+
+    selectedId,
+    setSelectedId,
+
+    detail,
+
     showDetails,
     setShowDetails,
+
     error,
     loadingEmployees,
     loadingDetail,
+
     refreshEmployees,
+
+    canPrev: page > 1,
+    canNext: page < pageCount,
+    prevPage: () => setPage((p) => Math.max(1, p - 1)),
+    nextPage: () => setPage((p) => Math.min(pageCount, p + 1)),
+    setPage,
   };
 }

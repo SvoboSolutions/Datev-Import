@@ -7,17 +7,39 @@ export function EmployeeListCard({
   onSelect,
   onRefresh,
   loading,
+
+  page,
+  pageCount,
+  total,
+  canPrev,
+  canNext,
+  prevPage,
+  nextPage,
 }: {
-  employees: EmployeeRow[] | null;
+  employees: EmployeeRow[];
   selectedId: number | null;
   onSelect: (id: number) => void;
   onRefresh: () => void;
   loading: boolean;
+
+  page: number;
+  pageCount: number;
+  total: number;
+  canPrev: boolean;
+  canNext: boolean;
+  prevPage: () => void;
+  nextPage: () => void;
 }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-sm font-medium text-primary">Liste</div>
+        <div>
+          <div className="text-sm font-medium text-primary">Liste</div>
+          <div className="text-xs text-muted">
+            {total} Treffer · Seite {page} / {pageCount}
+          </div>
+        </div>
+
         <button
           onClick={onRefresh}
           className="text-sm text-secondary hover:text-primary"
@@ -27,12 +49,10 @@ export function EmployeeListCard({
         </button>
       </div>
 
-      {loading && !employees ? (
+      {loading ? (
         <div className="flex justify-center py-10">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
         </div>
-      ) : !employees ? (
-        <div className="text-sm text-muted">Keine Daten.</div>
       ) : employees.length === 0 ? (
         <div className="text-sm text-muted">Keine Treffer.</div>
       ) : (
@@ -57,6 +77,27 @@ export function EmployeeListCard({
           })}
         </div>
       )}
+
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={prevPage}
+          disabled={!canPrev}
+          className="text-sm rounded-lg border border-border px-3 py-2 disabled:opacity-40 hover:bg-accent-soft"
+        >
+          ← Zurück
+        </button>
+
+        <button
+          type="button"
+          onClick={nextPage}
+          disabled={!canNext}
+          className="text-sm rounded-lg border border-border px-3 py-2 disabled:opacity-40 hover:bg-accent-soft"
+        >
+          Weiter →
+        </button>
+      </div>
     </Card>
   );
 }

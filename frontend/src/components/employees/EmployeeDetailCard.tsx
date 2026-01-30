@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "../ui/Card";
 import type { EmployeePayrollResponse } from "../../api/employees";
 import { AccordionSection } from "../ui/AccordionSection";
@@ -8,14 +9,12 @@ import { EmployeeStatsSection } from "./EmployeeStatsSection";
 export function EmployeeDetailCard({
   detail,
   loading,
-  showDetails,
-  onToggleDetails,
 }: {
   detail: EmployeePayrollResponse | null;
   loading: boolean;
-  showDetails: boolean;
-  onToggleDetails: () => void;
 }) {
+  const [showDetails, setShowDetails] = useState(false);
+
   if (loading && !detail) {
     return (
       <Card>
@@ -57,7 +56,6 @@ export function EmployeeDetailCard({
         </div>
       </Card>
 
-      {/* Kennzahlen als eigener Accordion */}
       <AccordionSection
         title="Kennzahlen"
         subtitle="Aktueller Monat + Vergleich zum Vormonat"
@@ -66,21 +64,25 @@ export function EmployeeDetailCard({
         <EmployeeStatsSection payroll={detail.payroll} />
       </AccordionSection>
 
-      {/* Verlauf & Tabelle */}
       <AccordionSection
         title="Verlauf"
         subtitle="Zeitreihe und Tabelle"
         defaultOpen={true}
-        right={
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm text-secondary">
+            {showDetails ? "Details aktiv – ggf. nach rechts scrollen →" : "Details aus"}
+          </div>
+
           <button
             type="button"
-            onClick={onToggleDetails}
+            onClick={() => setShowDetails((v) => !v)}
             className="text-sm rounded-lg border border-border px-3 py-2 hover:bg-accent-soft"
           >
             {showDetails ? "Details ausblenden" : "Details anzeigen"}
           </button>
-        }
-      >
+        </div>
+
         <EmployeePayrollChart rows={chartRows} />
         <EmployeePayrollTable rows={detail.payroll} showDetails={showDetails} />
       </AccordionSection>

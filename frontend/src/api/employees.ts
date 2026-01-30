@@ -32,8 +32,24 @@ export type EmployeePayrollResponse = {
   payroll: PayrollRow[];
 };
 
-export async function fetchEmployees(): Promise<EmployeeRow[]> {
-  return api<EmployeeRow[]>("/api/employees");
+export type EmployeesPageResponse = {
+  items: EmployeeRow[];
+  page: number;
+  page_size: number;
+  total: number;
+};
+
+export async function fetchEmployeesPage(params: {
+  q?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<EmployeesPageResponse> {
+  const sp = new URLSearchParams();
+  if (params.q) sp.set("q", params.q);
+  if (params.page) sp.set("page", String(params.page));
+  if (params.page_size) sp.set("page_size", String(params.page_size));
+  const qs = sp.toString() ? `?${sp.toString()}` : "";
+  return api<EmployeesPageResponse>(`/api/employees${qs}`);
 }
 
 export async function fetchEmployeePayroll(employeeId: number): Promise<EmployeePayrollResponse> {

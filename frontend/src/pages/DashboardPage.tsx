@@ -27,6 +27,53 @@ import { CostPerHeadChart } from "../components/dashboard/charts/CostPerHeadChar
 import { MomChangeChart } from "../components/dashboard/charts/MomChangeChart";
 import { ReimbursementRateChart } from "../components/dashboard/charts/ReimbursementRateChart";
 
+function PageHeader({
+  title,
+  subtitle,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-primary tracking-tight">
+          {title}
+        </h1>
+        {subtitle ? (
+          <p className="mt-1 text-sm text-secondary">{subtitle}</p>
+        ) : null}
+      </div>
+      {right ? <div className="w-full sm:w-auto">{right}</div> : null}
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-2xl border border-error/40 bg-red-50 px-4 py-3 text-sm text-error">
+      {message}
+    </div>
+  );
+}
+
+function SectionTitle({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 mb-4">
+      <h3 className="text-md font-semibold text-primary">{title}</h3>
+      {subtitle ? <span className="text-sm text-muted">{subtitle}</span> : null}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const [periods, setPeriods] = useState<string[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
@@ -38,7 +85,6 @@ export function DashboardPage() {
 
   const [error, setError] = useState<string | null>(null);
 
-  // global data
   useEffect(() => {
     async function init() {
       try {
@@ -49,7 +95,6 @@ export function DashboardPage() {
           fetchHotspots(5),
         ]);
         setHotspots(hs);
-
         setPeriods(ps);
         setMonthly(m);
         setSelectedPeriod(ps[0] ?? (m.length ? m[m.length - 1].period : ""));
@@ -60,7 +105,6 @@ export function DashboardPage() {
     init();
   }, []);
 
-  // period data
   useEffect(() => {
     async function loadPeriod() {
       if (!selectedPeriod) return;
@@ -81,13 +125,7 @@ export function DashboardPage() {
 
   const monthlyRows = useMemo(() => monthly ?? [], [monthly]);
 
-  if (error) {
-    return (
-      <div className="rounded-lg border border-error bg-red-50 px-4 py-3 text-sm text-error">
-        {error}
-      </div>
-    );
-  }
+  if (error) return <ErrorBanner message={error} />;
 
   if (!monthly || !selectedPeriod || !kpis || !top) {
     return (
@@ -98,134 +136,100 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <AccordionSection
-        title="Periode"
-        subtitle="KPIs & Top Mitarbeiter für die ausgewählte Periode"
-        defaultOpen={true}
-      >
-        <div className="flex justify-end pt-1 pb-4">
-          <PeriodSelect
-            periods={periods}
-            value={selectedPeriod}
-            onChange={setSelectedPeriod}
+    <div className="space-y-7">
+      <PageHeader
+        title="Dashboard"
+        subtitle="KPIs, Trends und Hotspots aus deinen Imports"
+        right={
+          <div className="rounded-2xl border border-border/70 bg-surface/70 px-3 py-2 flex items-center gap-3">
+            <div className="text-xs text-muted">Periode</div>
+            <PeriodSelect
+              periods={periods}
+              value={selectedPeriod}
+              onChange={setSelectedPeriod}
+            />
+          </div>
+        }
+      />
+
+      <div className="rounded-3xl border border-border/60 bg-surface/40 p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <KpiCard label="Mitarbeiter" value={kpis.employee_count} />
+          <KpiCard label="Gesamtkosten" value={money(kpis.total_cost)} accent />
+          <KpiCard label="Gesamtbrutto" value={money(kpis.total_gross)} />
+          <KpiCard label="SV-AG-Anteil" value={money(kpis.total_sv_ag)} />
+          <KpiCard
+            label="Letzter Import"
+            value={kpis.last_import_status ?? "–"}
           />
         </div>
 
-        <Card>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <KpiCard label="Mitarbeiter" value={kpis.employee_count} />
-            <KpiCard
-              label="Gesamtkosten"
-              value={money(kpis.total_cost)}
-              accent
-            />
-            <KpiCard label="Gesamtbrutto" value={money(kpis.total_gross)} />
-            <KpiCard label="SV-AG-Anteil" value={money(kpis.total_sv_ag)} />
-            <KpiCard
-              label="Letzter Import"
-              value={kpis.last_import_status ?? "–"}
-            />
-          </div>
+        <div className="mt-6">
+          <SectionTitle
+            title="Top Mitarbeiter"
+            subtitle="Gesamtkosten in der Periode"
+          />
+          <TopEmployeesChart items={top.items} period={top.period} />
+        </div>
+      </div>
 
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-md font-medium text-primary">
-                Top Mitarbeiter
-              </h3>
-              <span className="text-sm text-muted">
-                Gesamtkosten in der Periode
-              </span>
-            </div>
-            <TopEmployeesChart items={top.items} period={top.period} />
-          </div>
-        </Card>
-      </AccordionSection>
       <AccordionSection
         title="Gesamtentwicklung"
         subtitle="Alle importierten Monate (Historie)"
         defaultOpen={true}
       >
-        <div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-md font-medium text-primary">
-                  Gesamtkosten Trend
-                </h3>
-                <span className="text-sm text-muted">Summe je Monat</span>
-              </div>
-              <CostTrendChart rows={monthlyRows} />
-            </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <SectionTitle title="Gesamtkosten Trend" subtitle="Summe je Monat" />
+            <CostTrendChart rows={monthlyRows} />
+          </Card>
 
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-md font-medium text-primary">
-                  Kostenblöcke
-                </h3>
-                <span className="text-sm text-muted">
-                  SV-AG · Umlage · bAV · Steuern
-                </span>
-              </div>
-              <CostBlocksChart rows={monthlyRows} />
-            </Card>
+          <Card>
+            <SectionTitle
+              title="Kostenblöcke"
+              subtitle="SV-AG · Umlage · bAV · Steuern"
+            />
+            <CostBlocksChart rows={monthlyRows} />
+          </Card>
 
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-md font-medium text-primary">
-                  Erstattungen
-                </h3>
-                <span className="text-sm text-muted">KK · BA · IfSG</span>
-              </div>
-              <ReimbursementsChart rows={monthlyRows} />
-            </Card>
+          <Card>
+            <SectionTitle title="Erstattungen" subtitle="KK · BA · IfSG" />
+            <ReimbursementsChart rows={monthlyRows} />
+          </Card>
 
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-md font-medium text-primary">
-                  Gesamtkosten pro Kopf
-                </h3>
-                <span className="text-sm text-muted">
-                  € / Mitarbeiter je Monat
-                </span>
-              </div>
-              <CostPerHeadChart rows={monthlyRows} />
-            </Card>
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-md font-medium text-primary">
-                  Monat-zu-Monat Veränderung
-                </h3>
-                <span className="text-sm text-muted">
-                  Δ Gesamtkosten (€, %)
-                </span>
-              </div>
-              <MomChangeChart rows={monthlyRows} />
-            </Card>
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-md font-medium text-primary">
-                  Erstattungsquote
-                </h3>
-                <span className="text-sm text-muted">
-                  Erstattungen / Gesamtkosten
-                </span>
-              </div>
-              <ReimbursementRateChart rows={monthlyRows} />
-            </Card>
-          </div>
+          <Card>
+            <SectionTitle
+              title="Gesamtkosten pro Kopf"
+              subtitle="€ / Mitarbeiter je Monat"
+            />
+            <CostPerHeadChart rows={monthlyRows} />
+          </Card>
+
+          <Card>
+            <SectionTitle
+              title="Monat-zu-Monat Veränderung"
+              subtitle="Δ Gesamtkosten (€, %)"
+            />
+            <MomChangeChart rows={monthlyRows} />
+          </Card>
+
+          <Card>
+            <SectionTitle
+              title="Erstattungsquote"
+              subtitle="Erstattungen / Gesamtkosten"
+            />
+            <ReimbursementRateChart rows={monthlyRows} />
+          </Card>
         </div>
       </AccordionSection>
+
       <AccordionSection
         title="Hotspots"
         subtitle="Mitarbeiter mit den höchsten Gesamtkosten je Periode"
         defaultOpen={false}
       >
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-md font-medium text-primary">Hotspots</h3>
-            <span className="text-sm text-muted">Top Mitarbeiter je Monat</span>
-          </div>
+          <SectionTitle title="Hotspots" subtitle="Top Mitarbeiter je Monat" />
           <HotspotsTable data={hotspots ?? []} />
         </Card>
       </AccordionSection>
