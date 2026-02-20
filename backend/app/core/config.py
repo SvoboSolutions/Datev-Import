@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     SESSION_TTL_DAYS: int = 14
 
     BOOTSTRAP_ADMIN_USERNAME: str = "admin"
-    BOOTSTRAP_ADMIN_PASSWORD: str = "admin123"
+    BOOTSTRAP_ADMIN_PASSWORD: str = "admin"
 
 
 settings = Settings()
