@@ -7,6 +7,7 @@ const navItems = [
   { to: "/", label: "Dashboard" },
   { to: "/employees", label: "Mitarbeiter" },
   { to: "/imports", label: "Import" },
+  { to: "/datasets", label: "Datensätze" },
 ];
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -29,10 +30,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-bg">
-      {/* Sticky + Glass Header */}
       <header className="sticky top-0 z-50 border-b border-border/80 bg-surface/70 backdrop-blur supports-[backdrop-filter]:bg-surface/55">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-4">
-          {/* Brand */}
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center">
               <span className="text-accent font-bold">CSV</span>
@@ -47,7 +46,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center ml-6">
             <div className="inline-flex items-center gap-1 rounded-full bg-border/30 p-1 border border-border/60 shadow-sm">
               {navItems.map(({ to, label }) => (
@@ -71,9 +69,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </div>
           </nav>
 
-          {/* Right side actions */}
           <div className="ml-auto flex items-center gap-2">
-            {/* Mobile menu button */}
             <button
               type="button"
               className={cn(
@@ -86,7 +82,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
             >
-              {/* Simple hamburger / close icon (no extra libs) */}
               <svg
                 width="18"
                 height="18"
@@ -150,7 +145,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile Nav Dropdown */}
         <div className={cn("md:hidden overflow-hidden", mobileOpen ? "block" : "hidden")}>
           <div className="max-w-7xl mx-auto px-6 pb-4">
             <div className="mt-3 rounded-2xl border border-border/70 bg-surface/70 shadow-sm p-2">
