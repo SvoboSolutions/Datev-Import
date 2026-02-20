@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CsvUpload } from "../components/upload/CsvUpload";
 import { Card } from "../components/ui/Card";
-import { listImports, type ImportJob } from "../api/imports";
+import { listImports, type ImportJobRow } from "../api/imports";
 
 function Hero({
   title,
@@ -46,7 +46,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function ImportsPage() {
-  const [items, setItems] = useState<ImportJob[] | null>(null);
+  const [items, setItems] = useState<ImportJobRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
