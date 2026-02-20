@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_ENV: str = "dev"
-    DATABASE_URL: str = "sqlite:///./app.db"
+    DATABASE_URL: str = "sqlite:////data/app.db"
 
     SESSION_COOKIE_NAME: str = "session"
     SESSION_TTL_DAYS: int = 14

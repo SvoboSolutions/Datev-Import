@@ -5,6 +5,8 @@ services:
       dockerfile: backend/Dockerfile
     env_file:
       - backend/.env
+    volumes:
+      - datev_data:/data
     restart: unless-stopped
 
   web:
