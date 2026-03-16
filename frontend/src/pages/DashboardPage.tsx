@@ -4,10 +4,8 @@ import {
   fetchKpis,
   fetchMonthlyCosts,
   fetchPeriods,
-  fetchTopEmployees,
   type Kpis,
   type MonthlyRow,
-  type TopEmployeesResponse,
   fetchHotspots,
   type HotspotPeriod,
 } from "../api/dashboard";
@@ -19,12 +17,8 @@ import { PeriodSelect } from "../components/dashboard/PeriodSelect";
 
 import { HotspotsTable } from "../components/dashboard/charts/HotspotsTable";
 import { CostTrendChart } from "../components/dashboard/charts/CostTrendChart";
-import { CostBlocksChart } from "../components/dashboard/charts/CostBlocksChart";
-import { ReimbursementsChart } from "../components/dashboard/charts/ReimbursementsChart";
-import { TopEmployeesChart } from "../components/dashboard/charts/TopEmployeesChart";
 import { CostPerHeadChart } from "../components/dashboard/charts/CostPerHeadChart";
 import { MomChangeChart } from "../components/dashboard/charts/MomChangeChart";
-import { ReimbursementRateChart } from "../components/dashboard/charts/ReimbursementRateChart";
 
 function HeroBar({
   title,
@@ -62,7 +56,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="mb-4 flex items-center justify-between gap-3">
       <h3 className="text-md font-semibold text-primary">{title}</h3>
       {subtitle ? <span className="text-sm text-muted">{subtitle}</span> : null}
     </div>
@@ -75,7 +69,6 @@ export function DashboardPage() {
 
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [monthly, setMonthly] = useState<MonthlyRow[] | null>(null);
-  const [top, setTop] = useState<TopEmployeesResponse | null>(null);
   const [hotspots, setHotspots] = useState<HotspotPeriod[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,12 +96,8 @@ export function DashboardPage() {
       if (!selectedPeriod) return;
       try {
         setError(null);
-        const [k, t] = await Promise.all([
-          fetchKpis(selectedPeriod),
-          fetchTopEmployees(selectedPeriod, 5),
-        ]);
+        const k = await fetchKpis(selectedPeriod);
         setKpis(k);
-        setTop(t);
       } catch (e: any) {
         setError(e?.message ?? "Dashboard konnte nicht geladen werden");
       }
@@ -119,7 +108,7 @@ export function DashboardPage() {
 
   if (error) return <ErrorBanner message={error} />;
 
-  if (!monthly || !selectedPeriod || !kpis || !top) {
+  if (!monthly || !selectedPeriod || !kpis) {
     return (
       <div className="flex justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" />
@@ -143,36 +132,21 @@ export function DashboardPage() {
       <div className="rounded-3xl border border-border/60 bg-surface/50 overflow-hidden">
         <div className="h-1.5 bg-gradient-to-r from-accent/80 via-accent/30 to-transparent" />
         <div className="p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <KpiCard label="Mitarbeiter" value={kpis.employee_count} />
             <KpiCard label="Gesamtkosten" value={money(kpis.total_cost)} accent />
             <KpiCard label="Gesamtbrutto" value={money(kpis.total_gross)} />
             <KpiCard label="SV-AG-Anteil" value={money(kpis.total_sv_ag)} />
             <KpiCard label="Letzter Import" value={kpis.last_import_status ?? "–"} />
           </div>
-
-          <div className="mt-6">
-            <SectionTitle title="Top Mitarbeiter" subtitle="Gesamtkosten in der Periode" />
-            <TopEmployeesChart items={top.items} period={top.period} />
-          </div>
         </div>
       </div>
 
-      <AccordionSection title="Gesamtentwicklung" subtitle="Alle importierten Monate (Historie)" defaultOpen>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
+      <AccordionSection title="Gesamtkostenentwicklung" subtitle="Alle importierten Monate (Historie)" defaultOpen>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-1">
+          <Card className="lg:col-span-2">
             <SectionTitle title="Gesamtkosten Trend" subtitle="Summe je Monat" />
             <CostTrendChart rows={monthlyRows} />
-          </Card>
-
-          <Card>
-            <SectionTitle title="Kostenblöcke" subtitle="SV-AG · Umlage · bAV · Steuern" />
-            <CostBlocksChart rows={monthlyRows} />
-          </Card>
-
-          <Card>
-            <SectionTitle title="Erstattungen" subtitle="KK · BA · IfSG" />
-            <ReimbursementsChart rows={monthlyRows} />
           </Card>
 
           <Card>
@@ -184,15 +158,14 @@ export function DashboardPage() {
             <SectionTitle title="Monat-zu-Monat Veränderung" subtitle="Δ Gesamtkosten (€, %)" />
             <MomChangeChart rows={monthlyRows} />
           </Card>
-
-          <Card>
-            <SectionTitle title="Erstattungsquote" subtitle="Erstattungen / Gesamtkosten" />
-            <ReimbursementRateChart rows={monthlyRows} />
-          </Card>
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Hotspots" subtitle="Mitarbeiter mit den höchsten Gesamtkosten je Periode" defaultOpen={false}>
+      <AccordionSection
+        title="Hotspots"
+        subtitle="Mitarbeiter mit den höchsten Gesamtkosten je Periode"
+        defaultOpen={false}
+      >
         <Card>
           <SectionTitle title="Hotspots" subtitle="Top Mitarbeiter je Monat" />
           <HotspotsTable data={hotspots ?? []} />
