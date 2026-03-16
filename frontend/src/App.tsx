@@ -7,6 +7,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ImportsPage } from "./pages/ImportsPage";
 import { EmployeesPage } from "./pages/EmployeesPage";
 import { DatasetsPage } from "./pages/DatasetsPage";
+import { OrgchartPage } from "./pages/OrgPage";
 
 function ProtectedRoutes() {
   const { authenticated } = useAuth();
@@ -22,6 +23,7 @@ function ProtectedRoutes() {
         <Route path="/imports" element={<ImportsPage />} />
         <Route path="/employees" element={<EmployeesPage />} />
         <Route path="/datasets" element={<DatasetsPage />} />
+        <Route path="/orgchart" element={<OrgchartPage />} />
       </Routes>
     </AppLayout>
   );

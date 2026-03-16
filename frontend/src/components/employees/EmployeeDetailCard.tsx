@@ -5,6 +5,7 @@ import { AccordionSection } from "../ui/AccordionSection";
 import { EmployeePayrollChart } from "./EmployeePayrollChart";
 import { EmployeePayrollTable } from "./EmployeePayrollTable";
 import { EmployeeStatsSection } from "./EmployeeStatsSection";
+import { EmployeeProfileSection } from "./EmployeeProfileSection";
 
 export function EmployeeDetailCard({
   detail,
@@ -43,7 +44,7 @@ export function EmployeeDetailCard({
     }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <Card>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -60,10 +61,18 @@ export function EmployeeDetailCard({
 
       <AccordionSection
         title="Kennzahlen"
-        subtitle="Monat, Vormonat, aktuelles Jahr und letzte 12 Monate"
+        subtitle="Monat, Vormonat und flexible Zeitraumssumme"
         defaultOpen={true}
       >
         <EmployeeStatsSection payroll={detail.payroll} />
+      </AccordionSection>
+
+      <AccordionSection
+        title="Profildaten"
+        subtitle="Organigramm, Kontakt und Beschäftigung"
+        defaultOpen={true}
+      >
+        <EmployeeProfileSection detail={detail} />
       </AccordionSection>
 
       <AccordionSection
@@ -71,7 +80,7 @@ export function EmployeeDetailCard({
         subtitle="Zeitreihe und Tabelle"
         defaultOpen={true}
       >
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-secondary">
             {showDetails
               ? "Details aktiv – ggf. nach rechts scrollen →"
@@ -81,7 +90,7 @@ export function EmployeeDetailCard({
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className="text-sm rounded-lg border border-border px-3 py-2 hover:bg-accent-soft"
+            className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent-soft"
           >
             {showDetails ? "Details ausblenden" : "Details anzeigen"}
           </button>

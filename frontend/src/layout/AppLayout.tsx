@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 const navItems = [
   { to: "/", label: "Dashboard" },
   { to: "/employees", label: "Mitarbeiter" },
+  { to: "/orgchart", label: "Organigramm" },
   { to: "/imports", label: "Import" },
   { to: "/datasets", label: "Datensätze" },
 ];

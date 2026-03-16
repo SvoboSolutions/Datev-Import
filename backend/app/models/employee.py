@@ -22,3 +22,20 @@ class Employee(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    # Manuell pflegbare Stammdaten / Organigramm
+    profile = relationship(
+        "EmployeeProfile",
+        foreign_keys="EmployeeProfile.employee_id",
+        back_populates="employee",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    # Mitarbeitende, die an diese Person berichten
+    direct_reports = relationship(
+        "EmployeeProfile",
+        foreign_keys="EmployeeProfile.manager_employee_id",
+        back_populates="manager",
+    )
