@@ -8,6 +8,7 @@ import {
   Tooltip,
   ReferenceLine,
   Rectangle,
+  LabelList,
 } from "recharts";
 import { money, periodLabel, toNumber } from "../../charts/formatters";
 
@@ -34,7 +35,7 @@ function MomTooltip({
 
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2 shadow-sm">
-      <div className="text-sm font-semibold mb-2">{periodLabel(String(label))}</div>
+      <div className="mb-2 text-sm font-semibold">{periodLabel(String(label))}</div>
       <div className="space-y-1 text-sm">
         <div className="flex items-center justify-between gap-4">
           <span className="text-secondary">Δ Gesamtkosten</span>
@@ -67,17 +68,32 @@ export function MomChangeChart({
   });
 
   const maxAbs = series.reduce((m, r) => Math.max(m, Math.abs(toNumber(r.delta))), 0);
-  const yMax = (maxAbs || 1) * 1.2;
+  const yMax = maxAbs <= 0 ? 1 : Math.ceil(maxAbs * 1.2);
 
   return (
-    <div className="h-80">
+    <div className="h-96">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={series} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="4 4" />
-          <XAxis dataKey="period" tickFormatter={periodLabel} />
-          <YAxis width={90} domain={[-yMax, yMax]} tickFormatter={(v) => money(v)} />
+        <BarChart data={series} margin={{ top: 28, right: 24, bottom: 8, left: 12 }}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(148,163,184,0.35)" />
+          <XAxis
+            dataKey="period"
+            tickFormatter={periodLabel}
+            tick={{ fontSize: 12 }}
+            tickMargin={10}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            width={110}
+            domain={[-yMax, yMax]}
+            tickFormatter={(v) => money(v)}
+            tick={{ fontSize: 12 }}
+            tickMargin={10}
+            axisLine={false}
+            tickLine={false}
+          />
           <Tooltip content={<MomTooltip />} />
-          <ReferenceLine y={0} stroke="rgba(15,23,42,0.35)" />
+          <ReferenceLine y={0} stroke="rgba(15,23,42,0.45)" />
 
           <Bar
             dataKey="delta"
@@ -87,7 +103,14 @@ export function MomChangeChart({
               const fill = props?.payload?.delta >= 0 ? "#ef4444" : "#16a34a";
               return <Rectangle {...props} fill={fill} radius={[6, 6, 6, 6]} />;
             }}
-          />
+          >
+            <LabelList
+              dataKey="delta"
+              position="top"
+              formatter={(value) => money(toNumber(value))}
+              style={{ fontSize: 11, fill: "#0f172a", fontWeight: 600 }}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

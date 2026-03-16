@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import type { PayrollRow } from "../../api/employees";
 import { formatEuro } from "../../utils/format";
 
@@ -8,11 +9,6 @@ function euro(v: number) {
 function pct(v: number) {
   if (!Number.isFinite(v)) return "–";
   return `${v.toFixed(1)}%`;
-}
-
-function ratioPct(n: number, d: number) {
-  if (!d) return "–";
-  return pct((n / d) * 100);
 }
 
 function deltaBadge(delta: number, base: number) {
@@ -40,22 +36,39 @@ function StatCard({
   label,
   value,
   right,
+  children,
 }: {
   label: string;
   value: string;
   right?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-border bg-bg/40 p-4">
-      <div className="text-xs uppercase tracking-wide text-secondary">{label}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-xs uppercase tracking-wide text-secondary">{label}</div>
+        {right ? <div className="shrink-0">{right}</div> : null}
+      </div>
       <div className="mt-1 text-xl font-semibold text-primary">{value}</div>
-      {right ? <div className="mt-2">{right}</div> : null}
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }
 
+function getYearFromPeriod(period: string): number | null {
+  const match = /^(\d{4})-(\d{1,2})$/.exec(period);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+type RangeOption = "total" | "last12" | "currentYear" | `year:${number}`;
+
 export function EmployeeStatsSection({ payroll }: { payroll: PayrollRow[] }) {
-  const sorted = [...payroll].sort((a, b) => b.period.localeCompare(a.period));
+  const sorted = useMemo(
+    () => [...payroll].sort((a, b) => b.period.localeCompare(a.period)),
+    [payroll]
+  );
+
   const cur = sorted[0];
   const prev = sorted[1];
 
@@ -63,15 +76,63 @@ export function EmployeeStatsSection({ payroll }: { payroll: PayrollRow[] }) {
     return <div className="text-sm text-muted">Keine Payroll-Daten vorhanden.</div>;
   }
 
-  const reimbCur =
-    (cur.reimb_kk_amount ?? 0) + (cur.reimb_ba_amount ?? 0) + (cur.reimb_ifsg_amount ?? 0);
+  const availableYears = Array.from(
+    new Set(
+      sorted
+        .map((row) => getYearFromPeriod(row.period))
+        .filter((year): year is number => year != null)
+    )
+  ).sort((a, b) => b - a);
 
-  const reimbPrev =
-    (prev?.reimb_kk_amount ?? 0) + (prev?.reimb_ba_amount ?? 0) + (prev?.reimb_ifsg_amount ?? 0);
+  const newestYear = availableYears[0] ?? null;
+
+  const [selectedRange, setSelectedRange] = useState<RangeOption>("currentYear");
+
+  const currentYearRows =
+    newestYear == null
+      ? []
+      : sorted.filter((row) => getYearFromPeriod(row.period) === newestYear);
+
+  const rolling12Rows = sorted.slice(0, 12);
+
+  const currentYearTotalCost = currentYearRows.reduce(
+    (sum, row) => sum + (row.total_cost ?? 0),
+    0
+  );
+
+  const rolling12TotalCost = rolling12Rows.reduce(
+    (sum, row) => sum + (row.total_cost ?? 0),
+    0
+  );
+
+  const totalCostAll = sorted.reduce((sum, row) => sum + (row.total_cost ?? 0), 0);
+
+  const rangeLabel = (() => {
+    if (selectedRange === "total") return "Gesamtkosten gesamt";
+    if (selectedRange === "last12") return "Gesamtkosten letzte 12 Monate";
+    if (selectedRange === "currentYear") {
+      return `Gesamtkosten ${newestYear ?? "aktuelles Jahr"}`;
+    }
+    if (selectedRange.startsWith("year:")) {
+      return `Gesamtkosten ${selectedRange.replace("year:", "")}`;
+    }
+    return "Gesamtkosten";
+  })();
+
+  const rangeValue = (() => {
+    if (selectedRange === "total") return totalCostAll;
+    if (selectedRange === "last12") return rolling12TotalCost;
+    if (selectedRange === "currentYear") return currentYearTotalCost;
+    if (selectedRange.startsWith("year:")) {
+      const year = Number(selectedRange.replace("year:", ""));
+      return sorted
+        .filter((row) => getYearFromPeriod(row.period) === year)
+        .reduce((sum, row) => sum + (row.total_cost ?? 0), 0);
+    }
+    return 0;
+  })();
 
   const deltaCost = prev ? (cur.total_cost ?? 0) - (prev.total_cost ?? 0) : 0;
-  const deltaGross = prev ? (cur.gross_amount ?? 0) - (prev.gross_amount ?? 0) : 0;
-  const deltaReimb = prev ? reimbCur - reimbPrev : 0;
 
   return (
     <div className="space-y-4">
@@ -85,38 +146,39 @@ export function EmployeeStatsSection({ payroll }: { payroll: PayrollRow[] }) {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
-          label="Gesamtkosten"
+          label="Gesamtkosten aktueller Monat"
           value={euro(cur.total_cost ?? 0)}
           right={prev ? deltaBadge(deltaCost, prev.total_cost ?? 0) : undefined}
         />
-        <StatCard
-          label="Brutto"
-          value={euro(cur.gross_amount ?? 0)}
-          right={prev ? deltaBadge(deltaGross, prev.gross_amount ?? 0) : undefined}
-        />
-        <StatCard label="SV-AG" value={euro(cur.sv_ag_amount ?? 0)} />
-        <StatCard
-          label="Erstattungen gesamt"
-          value={euro(reimbCur)}
-          right={prev ? deltaBadge(deltaReimb, reimbPrev) : undefined}
-        />
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
-          label="Erstattungsquote"
-          value={ratioPct(reimbCur, cur.total_cost ?? 0)}
+          label="Gesamtkosten Vormonat"
+          value={euro(prev?.total_cost ?? 0)}
         />
-        <StatCard
-          label="Kosten / Brutto (Quote)"
-          value={ratioPct(cur.total_cost ?? 0, cur.gross_amount ?? 0)}
-        />
-        <StatCard
-          label="Netto / Brutto (Quote)"
-          value={ratioPct(cur.net_amount ?? 0, cur.gross_amount ?? 0)}
-        />
+
+        <StatCard label={rangeLabel} value={euro(rangeValue)}>
+          <label className="block">
+            <span className="mb-1 block text-xs text-secondary">Zeitraum</span>
+            <select
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value as RangeOption)}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-primary outline-none transition focus:border-accent"
+            >
+              {newestYear != null ? (
+                <option value="currentYear">Aktuelles Jahr ({newestYear})</option>
+              ) : null}
+              <option value="last12">Letzte 12 Monate</option>
+              <option value="total">Gesamt</option>
+              {availableYears.map((year) => (
+                <option key={year} value={`year:${year}`}>
+                  Jahr {year}
+                </option>
+              ))}
+            </select>
+          </label>
+        </StatCard>
       </div>
     </div>
   );

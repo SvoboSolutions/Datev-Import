@@ -51,14 +51,16 @@ export function EmployeeDetailCard({
             <div className="text-lg font-semibold text-primary">
               {detail.employee.last_name}, {detail.employee.first_name}
             </div>
-            <div className="text-xs text-muted">Pers.-Nr.: {detail.employee.external_id}</div>
+            <div className="text-xs text-muted">
+              Pers.-Nr.: {detail.employee.external_id}
+            </div>
           </div>
         </div>
       </Card>
 
       <AccordionSection
         title="Kennzahlen"
-        subtitle="Aktueller Monat + Vergleich zum Vormonat"
+        subtitle="Monat, Vormonat, aktuelles Jahr und letzte 12 Monate"
         defaultOpen={true}
       >
         <EmployeeStatsSection payroll={detail.payroll} />
@@ -71,7 +73,9 @@ export function EmployeeDetailCard({
       >
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm text-secondary">
-            {showDetails ? "Details aktiv – ggf. nach rechts scrollen →" : "Details aus"}
+            {showDetails
+              ? "Details aktiv – ggf. nach rechts scrollen →"
+              : "Details aus"}
           </div>
 
           <button

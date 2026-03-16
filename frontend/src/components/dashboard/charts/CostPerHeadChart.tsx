@@ -6,6 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  LabelList,
 } from "recharts";
 import { EuroTooltip } from "../../charts/EuroTooltip";
 import { money, periodLabel, toNumber } from "../../charts/formatters";
@@ -24,26 +25,50 @@ export function CostPerHeadChart({
     })
     .sort((a, b) => a.period.localeCompare(b.period));
 
-  // optional: ein bisschen Headroom, damit die Linie nicht klebt (max bei ~60%)
   const maxVal = data.reduce((m, r) => Math.max(m, r.per_head), 0);
-  const yMax = maxVal <= 0 ? 1 : Math.ceil(maxVal / 0.6);
+  const yMax = maxVal <= 0 ? 1 : Math.ceil(maxVal * 1.15);
 
   return (
-    <div className="h-80">
+    <div className="h-96">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="4 4" />
-          <XAxis dataKey="period" tickFormatter={periodLabel} />
-          <YAxis width={90} tickFormatter={(v) => money(v)} domain={[0, yMax]} />
+        <LineChart data={data} margin={{ top: 28, right: 24, bottom: 8, left: 12 }}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(148,163,184,0.35)" />
+          <XAxis
+            dataKey="period"
+            tickFormatter={periodLabel}
+            tick={{ fontSize: 12 }}
+            tickMargin={10}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            width={110}
+            tickFormatter={(v) => money(v)}
+            domain={[0, yMax]}
+            tick={{ fontSize: 12 }}
+            tickMargin={10}
+            axisLine={false}
+            tickLine={false}
+          />
           <Tooltip content={<EuroTooltip />} />
           <Line
             type="monotone"
             dataKey="per_head"
             name="Kosten pro Kopf"
             stroke="#8b5cf6"
-            strokeWidth={2}
-            dot={false}
-          />
+            strokeWidth={3}
+            dot={{ r: 4, strokeWidth: 2, fill: "#ffffff" }}
+            activeDot={{ r: 6 }}
+            isAnimationActive={false}
+          >
+            <LabelList
+              dataKey="per_head"
+              position="top"
+              formatter={(value) => money(toNumber(value))}
+              style={{ fontSize: 11, fill: "#0f172a", fontWeight: 600 }}
+              offset={10}
+            />
+          </Line>
         </LineChart>
       </ResponsiveContainer>
     </div>

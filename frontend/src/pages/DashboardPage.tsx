@@ -144,7 +144,7 @@ export function DashboardPage() {
 
       <AccordionSection title="Gesamtkostenentwicklung" subtitle="Alle importierten Monate (Historie)" defaultOpen>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-1">
-          <Card className="lg:col-span-2">
+          <Card >
             <SectionTitle title="Gesamtkosten Trend" subtitle="Summe je Monat" />
             <CostTrendChart rows={monthlyRows} />
           </Card>

@@ -4,11 +4,7 @@ function pickValue(it: any): number {
   // In 2.6.7 ist value oft NICHT gesetzt, data enthält alles
   const d = it?.data ?? {};
   const raw =
-    it?.value ??
-    d.value ??
-    d.y ??
-    d[ d.yField ?? "value" ] ??
-    d[ "value" ];
+    it?.value ?? d.value ?? d.y ?? d[d.yField ?? "value"] ?? d["value"];
 
   return toNumber(raw);
 }
@@ -33,7 +29,7 @@ export function costBlocksTooltipHtml(title: string, items: any[]) {
     .map(
       (r) => `<div style="display:flex;justify-content:space-between;gap:12px;">
         <span>${r.name}</span><b>${money(r.value)}</b>
-      </div>`
+      </div>`,
     )
     .join("");
 
@@ -41,8 +37,5 @@ export function costBlocksTooltipHtml(title: string, items: any[]) {
     <div style="font-weight:700;margin-bottom:8px;">${t}</div>
     <div style="display:flex;flex-direction:column;gap:6px;">${body}</div>
     <div style="height:1px;background:rgba(0,0,0,0.08);margin:10px 0;"></div>
-    <div style="display:flex;justify-content:space-between;">
-      <span><b>Summe</b></span><b>${money(sum)}</b>
-    </div>
   </div>`;
 }
