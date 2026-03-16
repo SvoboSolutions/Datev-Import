@@ -67,7 +67,6 @@ export function OrgPersonModal({
   const [employeeOptions, setEmployeeOptions] = useState<EmployeeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [creatingLocation, setCreatingLocation] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -114,6 +113,7 @@ export function OrgPersonModal({
 
   async function handleSave() {
     if (!employeeId) return;
+
     try {
       setSaving(true);
       setError(null);
@@ -166,7 +166,9 @@ export function OrgPersonModal({
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-primary">{title}</h3>
-              <p className="text-sm text-secondary">Profildaten direkt im Organigramm bearbeiten</p>
+              <p className="text-sm text-secondary">
+                Profildaten direkt im Organigramm bearbeiten
+              </p>
             </div>
 
             <button
@@ -200,7 +202,7 @@ export function OrgPersonModal({
                 onSave={handleSave}
                 onReset={handleReset}
                 onCreateLocation={handleCreateLocation}
-                creatingLocation={creatingLocation}
+                creatingLocation={false}
                 compact
               />
             </div>

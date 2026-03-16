@@ -23,7 +23,6 @@ export function costBlocksTooltipHtml(title: string, items: any[]) {
   }));
 
   rows.sort((a, b) => b.value - a.value);
-  const sum = rows.reduce((acc, r) => acc + r.value, 0);
 
   const body = rows
     .map(

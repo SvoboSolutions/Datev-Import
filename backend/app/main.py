@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.db import engine, Base, SessionLocal
+from app.core.db import engine, SessionLocal
 from app.core.security import hash_password
 
 from app.models.user import User
@@ -18,11 +18,14 @@ from app.models.location import Location
 
 app = FastAPI(title="CSV Reporting App")
 app.include_router(api_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -32,8 +35,11 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup():
+    inspector = inspect(engine)
 
-    # Admin-User bootstrappen, falls DB leer
+    if not inspector.has_table("users"):
+        return
+
     db = SessionLocal()
     try:
         existing = db.execute(

@@ -2,19 +2,24 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: backend/dockerfile
     env_file:
       - backend/.env
     volumes:
       - datev_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   web:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: frontend/dockerfile
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
     restart: unless-stopped

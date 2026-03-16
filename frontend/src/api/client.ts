@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -35,14 +35,13 @@ export async function api<T>(
     method?: HttpMethod;
     body?: any;
     headers?: Record<string, string>;
-  } = {}
+  } = {},
 ): Promise<T> {
   const method = options.method ?? "GET";
   const headers: Record<string, string> = { ...(options.headers ?? {}) };
 
   let body: BodyInit | undefined = undefined;
 
-  // JSON body (außer FormData)
   if (options.body instanceof FormData) {
     body = options.body;
   } else if (options.body !== undefined) {
@@ -54,7 +53,7 @@ export async function api<T>(
     method,
     headers,
     body,
-    credentials: "include", // <-- SESSION COOKIE !!!
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -65,13 +64,12 @@ export async function api<T>(
     throw new ApiError(res.status, msg, detail);
   }
 
-  // No content
   if (res.status === 204) return undefined as T;
 
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/json")) {
     return (await res.json()) as T;
   }
-  // fallback text
+
   return (await res.text()) as unknown as T;
 }
