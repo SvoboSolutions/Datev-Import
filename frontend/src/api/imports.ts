@@ -10,7 +10,7 @@ export type ImportJobRow = {
   row_count: number;
 };
 
-export type UploadResult = {
+export type UploadResultItem = {
   id: number;
   status: string;
   period: string | null;
@@ -19,14 +19,22 @@ export type UploadResult = {
   created_at: string | null;
 };
 
+export type UploadManyResult = {
+  count: number;
+  items: UploadResultItem[];
+};
+
 export async function listImports() {
   return api<ImportJobRow[]>("/api/imports", { method: "GET" });
 }
 
-export async function uploadImport(file: File) {
+export async function uploadImports(files: File[]) {
   const fd = new FormData();
-  fd.append("file", file);
-  return api<UploadResult>("/api/imports", {
+  for (const file of files) {
+    fd.append("files", file);
+  }
+
+  return api<UploadManyResult>("/api/imports", {
     method: "POST",
     body: fd,
   });

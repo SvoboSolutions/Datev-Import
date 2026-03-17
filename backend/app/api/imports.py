@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, UploadFile, HTTPException, Request
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, UploadFile, HTTPException, File
 from sqlalchemy.orm import Session as DbSession
 from sqlalchemy import select, desc, func, delete
 
@@ -11,33 +14,69 @@ from app.services.import_service import ImportService
 router = APIRouter()
 
 
+def _validate_csv_files(files: list[UploadFile]) -> None:
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
+
+    invalid = [
+        f.filename or "<unknown>"
+        for f in files
+        if not (f.filename and f.filename.lower().endswith(".csv"))
+    ]
+    if invalid:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only CSV files are allowed. Invalid: {', '.join(invalid)}",
+        )
+
+
 @router.post("")
-def upload_import(
-    file: UploadFile,
+def upload_imports(
+    files: list[UploadFile] = File(...),
     db: DbSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+    _validate_csv_files(files)
 
     svc = ImportService()
+    results: list[dict] = []
 
-    contents = file.file.read()
-    tmp_path = f"/tmp/{file.filename}"
+    for file in files:
+        original_filename = file.filename or "upload.csv"
+        tmp_name = f"{uuid4().hex}_{Path(original_filename).name}"
+        tmp_path = Path("/tmp") / tmp_name
 
-    with open(tmp_path, "wb") as f:
-        f.write(contents)
+        try:
+            contents = file.file.read()
+            tmp_path.write_bytes(contents)
 
-    # WICHTIG: ImportService erwartet db jetzt (wie bei dir umgebaut)
-    job = svc.import_csv_file(db=db, file_path=tmp_path, original_filename=file.filename)
+            job = svc.import_csv_file(
+                db=db,
+                file_path=str(tmp_path),
+                original_filename=original_filename,
+            )
+
+            results.append(
+                {
+                    "id": job.id,
+                    "status": job.status,
+                    "period": job.period,
+                    "filename": job.original_filename,
+                    "source_type": job.source_type,
+                    "created_at": job.created_at.isoformat() if job.created_at else None,
+                }
+            )
+        finally:
+            try:
+                if tmp_path.exists():
+                    tmp_path.unlink()
+            except OSError:
+                pass
+            file.file.close()
 
     return {
-        "id": job.id,
-        "status": job.status,
-        "period": job.period,
-        "filename": job.original_filename,
-        "source_type": job.source_type,
-        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "count": len(results),
+        "items": results,
     }
 
 
@@ -46,9 +85,6 @@ def list_imports(
     db: DbSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """
-    Payroll-Datensätze (Imports) inkl. row_count (Anzahl EmployeeCost-Zeilen)
-    """
     stmt = (
         select(
             ImportJob.id,
@@ -94,19 +130,11 @@ def delete_import(
     db: DbSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """
-    Löscht einen kompletten Payroll-Datensatz:
-    - EmployeeCost-Zeilen
-    - ImportJob
-    Robust auch ohne FK-CASCADE (SQLite-PRAGMA).
-    """
     job = db.execute(select(ImportJob).where(ImportJob.id == import_id)).scalar_one_or_none()
     if not job:
         raise HTTPException(status_code=404, detail="Import not found")
 
-    # 1) Kosten löschen
     db.execute(delete(EmployeeCost).where(EmployeeCost.import_id == import_id))
-    # 2) Import löschen
     db.execute(delete(ImportJob).where(ImportJob.id == import_id))
     db.commit()
 

@@ -1,99 +1,119 @@
-import { useRef, useState } from "react";
-import { uploadImport } from "../../api/imports";
+import { useMemo, useState } from "react";
+import { uploadImports, type UploadManyResult } from "../../api/imports";
 
-export function CsvUpload() {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [fileName, setFileName] = useState<string>("");
-  const [busy, setBusy] = useState(false);
+export function CsvUpload({
+  onUploaded,
+}: {
+  onUploaded?: (result: UploadManyResult) => void | Promise<void>;
+}) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+  const fileLabel = useMemo(() => {
+    if (files.length === 0) return "Keine Datei ausgewählt";
+    if (files.length === 1) return files[0].name;
+    return `${files.length} Dateien ausgewählt`;
+  }, [files]);
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    setFiles(selected);
     setError(null);
-    setOk(null);
-    const f = e.target.files?.[0];
-    setFileName(f?.name ?? "");
+    setSuccess(null);
   }
 
-  async function onUpload() {
-    setError(null);
-    setOk(null);
-
-    const f = inputRef.current?.files?.[0];
-    if (!f) {
-      setError("Bitte eine CSV-Datei auswählen.");
-      return;
-    }
-    if (!f.name.toLowerCase().endsWith(".csv")) {
-      setError("Nur CSV-Dateien sind erlaubt.");
+  async function handleUpload() {
+    if (files.length === 0) {
+      setError("Bitte mindestens eine CSV-Datei auswählen.");
       return;
     }
 
     try {
-      setBusy(true);
-      const res = await uploadImport(f);
-      setOk(`Import gestartet: ${res.filename} (${res.period ?? "—"})`);
-      // reset input
-      if (inputRef.current) inputRef.current.value = "";
-      setFileName("");
+      setUploading(true);
+      setError(null);
+      setSuccess(null);
+
+      const result = await uploadImports(files);
+
+      setSuccess(
+        result.count === 1
+          ? `1 Datei erfolgreich importiert.`
+          : `${result.count} Dateien erfolgreich importiert.`,
+      );
+      setFiles([]);
+
+      const input = document.getElementById("csv-upload-input") as HTMLInputElement | null;
+      if (input) input.value = "";
+
+      await onUploaded?.(result);
     } catch (e: any) {
       setError(e?.message ?? "Upload fehlgeschlagen");
     } finally {
-      setBusy(false);
+      setUploading(false);
     }
   }
 
   return (
     <div className="space-y-4">
-      <div>
-        <div className="text-sm font-medium text-secondary mb-2">
-          Datei auswählen
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label
+          htmlFor="csv-upload-input"
+          className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-primary transition hover:bg-accent-soft"
+        >
+          CSV-Dateien auswählen
+        </label>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".csv,text/csv"
-            onChange={onPickFile}
-            className="block w-full text-sm
-              file:mr-3 file:rounded-lg file:border-0
-              file:bg-accent file:text-white
-              file:px-4 file:py-2
-              file:hover:bg-accent-hover
-              file:transition
-              text-secondary"
-          />
+        <input
+          id="csv-upload-input"
+          type="file"
+          accept=".csv,text/csv"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
 
-          <button
-            onClick={onUpload}
-            disabled={busy}
-            className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium
-              bg-accent text-white hover:bg-accent-hover transition
-              disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {busy ? "Lädt…" : "Upload starten"}
-          </button>
-        </div>
-
-        {fileName && (
-          <div className="mt-2 text-xs text-muted">
-            Ausgewählt: {fileName}
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={uploading || files.length === 0}
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {uploading ? "Import läuft…" : files.length <= 1 ? "Datei importieren" : "Dateien importieren"}
+        </button>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-error bg-red-50 px-3 py-2 text-sm text-error">
+      <div className="rounded-xl border border-border/60 bg-surface px-4 py-3 text-sm text-secondary">
+        {fileLabel}
+      </div>
+
+      {files.length > 0 ? (
+        <div className="rounded-xl border border-border/60 bg-bg/40 p-3">
+          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-secondary">
+            Ausgewählte Dateien
+          </div>
+          <ul className="space-y-1 text-sm text-primary">
+            {files.map((file) => (
+              <li key={`${file.name}-${file.size}-${file.lastModified}`} className="truncate">
+                {file.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-xl border border-error/40 bg-red-50 px-4 py-3 text-sm text-error">
           {error}
         </div>
-      )}
+      ) : null}
 
-      {ok && (
-        <div className="rounded-lg border border-success bg-green-50 px-3 py-2 text-sm text-success">
-          {ok}
+      {success ? (
+        <div className="rounded-xl border border-success/30 bg-green-50 px-4 py-3 text-sm text-success">
+          {success}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

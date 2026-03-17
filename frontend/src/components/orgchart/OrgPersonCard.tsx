@@ -34,11 +34,9 @@ export function OrgPersonCard({
       onClick={() =>
         onClick?.(person.employee_id, `${person.last_name}, ${person.first_name}`)
       }
-      className={[
-        "w-full max-w-[240px] min-h-[116px] rounded-xl border p-3 text-left shadow-sm transition",
-        "hover:-translate-y-0.5 hover:shadow-md",
-        toneClasses(person),
-      ].join(" ")}
+      className={`w-full min-w-0 rounded-xl border p-3 text-left shadow-sm transition hover:shadow-md ${toneClasses(
+        person
+      )}`}
     >
       <div className="text-sm font-semibold leading-tight text-primary">
         {person.last_name}, {person.first_name}

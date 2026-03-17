@@ -41,7 +41,7 @@ export function OrgPeopleGroup({
 
   return (
     <div className={`rounded-2xl border p-3 ${tone.wrap}`}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div
           className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${tone.badge}`}
         >
@@ -50,7 +50,7 @@ export function OrgPeopleGroup({
         <div className="text-[11px] text-secondary">{people.length}</div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(190px,1fr))]">
         {people.map((person) => (
           <OrgPersonCard
             key={person.employee_id}
